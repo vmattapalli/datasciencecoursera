@@ -1,0 +1,92 @@
+
+### Reading Data from CSV
+```{r}
+activity<-read.csv("activity.csv", header=T, sep=",")
+
+```
+
+### Creation of Histogram
+```{r}
+dailysteps<-aggregate(activity$steps, by=list(Day=activity$date), FUN=sum)
+print(dailysteps)
+hist(dailysteps$x, xlab="Steps", main="Total Steps per Day")
+
+```
+
+### Calculation Mean and Median
+```{r}
+Avgsteps <- as.integer(mean(dailysteps$x,na.rm=T))
+paste("The average number of steps taken each day:", Avgsteps)
+Quartile2<- median(dailysteps$x,na.rm=T)
+paste("The Median number of steps taken each day:", Quartile2)
+```
+
+### Time Series on Average
+
+```{r}
+Avgtimeseries<- aggregate(activity$steps, by=list(Interval=activity$interval), FUN=mean, na.rm=T)
+Defineddata <- Avgtimeseries[!is.na(Avgtimeseries$x),]
+library(ggplot2)
+ggplot(Defineddata,aes(Interval,x))+geom_line()+geom_point()+ylab("Number of steps")+ggtitle("Average steps per interval")
+```
+
+### 5-minute interval, on average,that contains the maximum number of steps
+
+```{r}
+Maxvalue <- as.integer(max(Defineddata$x,na.rm=T))
+Interval<-Defineddata$Interval[as.integer(Defineddata$x)==Maxvalue]
+paste("The interval for max steps is ",Interval,sep="")
+```
+### Count of Missing Values
+```{r}
+paste("The total Missing Values are:",sum(is.na(activity$steps)))
+```
+### Imputing Missing Values by replacing with Median values of day & interval data
+
+```{r}
+Modifieddata <- activity
+Nas<- is.na(Modifieddata$steps)
+Medianinterval<- tapply(Modifieddata$steps, Modifieddata$interval, median, na.rm=TRUE, simplify = TRUE)
+Modifieddata$steps[Nas] <- Medianinterval[as.character(Modifieddata$interval[Nas])]
+```
+
+### Using Imputed Missing Values, creating Histogram
+
+```{r}
+Moddatasteps<-aggregate(Modifieddata$steps, by=list(Date=Modifieddata$date), FUN=sum)
+print(Moddatasteps)
+hist(Moddatasteps$x, col="Red", xlab="Steps" , main="#Steps taken per day")
+hist(dailysteps$x, col="blue", xlab="Steps", main="#Steps taken per day", add=T)
+legend("topright", c("NA Data", "Non-NA Data"), fill=c("Red", "blue") )
+```
+
+### Mean of Imputed Missing Values
+``` {r}
+ModdataMean<-as.integer(mean(Moddatasteps$x))
+paste("The average number of steps taken each day:", ModdataMean)
+```
+### Median of Imputed Missing Values
+
+``` {r}
+ModdataMedian<- median(Moddatasteps$x)
+paste("The Median number of steps taken each day:", ModdataMedian)
+```
+
+### Activity patterns between Weekdays and Weekends
+
+``` {r}
+Modifieddata$Wday<-ifelse(weekdays(as.Date(Modifieddata$date,'%Y-%m-%d'))=="Saturday" | weekdays(as.Date(Modifieddata$date,'%Y-%m-%d'))=="Sunday","Weekend","Weekday")
+Modifieddata$date<-strptime(Modifieddata$date,'%Y-%m-%d')
+Modifieddata$wday<-factor(Modifieddata$Wday)
+Moddatasteps1<-aggregate(Modifieddata$steps, by=list(wday=Modifieddata$wday, Interval = Modifieddata$interval), FUN=mean)
+par(mfrow=c(2,1), mar = c(2,4,2,2))
+
+plot(Moddatasteps1$Interval[Moddatasteps1$wday=="Weekday"],Moddatasteps1$x[Moddatasteps1$wday=="Weekday"], xlab="Interval", ylab="Steps per Interval", main="Weekday Interval by Steps",type="l",col="green")
+plot(Moddatasteps1$Interval[Moddatasteps1$wday=="Weekend"],Moddatasteps1$x[Moddatasteps1$wday=="Weekend"], xlab="Interval", ylab="Steps per Interval", main="Weekend Interval by Steps",type="l",col="red")
+```
+
+
+
+
+
+
